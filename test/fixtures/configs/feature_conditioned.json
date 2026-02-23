@@ -1,0 +1,11 @@
+{
+  "conditions": {
+    "jsonPointer": "/clientId",
+    "equals": 1234
+  },
+  "options": {
+    "myConfig": {
+      "conditioned": true
+    }
+  }
+}

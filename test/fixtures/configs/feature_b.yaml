@@ -1,0 +1,9 @@
+metadata:
+  aliases:
+    - "B"
+options:
+  myConfig:
+    handler: "b"
+    nested:
+      two: 2
+      shared: "from-b"

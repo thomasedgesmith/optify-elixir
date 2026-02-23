@@ -1,0 +1,13 @@
+[package]
+name = "optify_nif"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "optify_nif"
+crate-type = ["cdylib"]
+
+[dependencies]
+optify = "0.20.5"
+rustler = "0.37"
+serde_json = "1"
