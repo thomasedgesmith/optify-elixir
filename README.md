@@ -28,7 +28,7 @@ Tuple + bang APIs are both available:
 
 
 ```elixir
-{:ok, provider} = Optify.build("config/optify")
+provider = Optify.build!("config/optify")
 
 options =
   Optify.get_options!(provider, "myConfig", ["feature_A", "feature_B"])
@@ -56,6 +56,28 @@ plug Optify.Plug,
   provider: provider,
   key: "myConfig",
   feature_names: fn conn -> conn.assigns[:features] || [] end,
+  assign: :my_config
+```
+
+If you want controller/request-level control, pass an options hash via assigns:
+
+```elixir
+# in controller action
+conn
+|> assign(:optify_request, %{
+  feature_names: ["feature_A"],
+  preferences: %{
+    constraints: %{clientId: 1234},
+    overrides: %{myConfig: %{handler: "special"}}
+  }
+})
+```
+
+```elixir
+plug Optify.Plug,
+  provider: provider,
+  key: "myConfig",
+  options_assign: :optify_request,
   assign: :my_config
 ```
 

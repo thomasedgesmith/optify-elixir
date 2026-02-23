@@ -24,4 +24,27 @@ defmodule Optify.PlugTest do
 
     assert conn.assigns.my_config["handler"] == "b"
   end
+
+  test "supports controller-provided options hash" do
+    provider = Optify.build!(@configs)
+
+    conn =
+      :get
+      |> conn("/")
+      |> assign(:optify_request, %{
+        feature_names: ["feature_conditioned", "A"],
+        preferences: %{constraints: %{clientId: 1234}}
+      })
+      |> Optify.Plug.call(
+        Optify.Plug.init(
+          provider: provider,
+          key: "myConfig",
+          options_assign: :optify_request,
+          assign: :my_config
+        )
+      )
+
+    assert conn.assigns.my_config["conditioned"] == true
+    assert conn.assigns.my_config["handler"] == "a"
+  end
 end

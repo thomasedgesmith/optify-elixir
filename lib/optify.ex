@@ -17,10 +17,35 @@ defmodule Optify do
   def build(directory), do: Native.build_provider(directory)
 
   @doc """
+  Same as `build/1` but returns the provider directly and raises on failure.
+  """
+  @spec build!(String.t()) :: provider()
+  def build!(directory) do
+    case build(directory) do
+      {:ok, provider} -> provider
+      {:error, reason} -> raise ArgumentError, "Optify.build!/1 failed: #{reason}"
+    end
+  end
+
+  @doc """
   Build a provider from multiple config directories.
   """
   @spec build_from_directories([String.t()]) :: {:ok, provider()} | {:error, String.t()}
   def build_from_directories(directories), do: Native.build_provider_from_directories(directories)
+
+  @doc """
+  Same as `build_from_directories/1` but returns provider directly and raises on failure.
+  """
+  @spec build_from_directories!([String.t()]) :: provider()
+  def build_from_directories!(directories) do
+    case build_from_directories(directories) do
+      {:ok, provider} ->
+        provider
+
+      {:error, reason} ->
+        raise ArgumentError, "Optify.build_from_directories!/1 failed: #{reason}"
+    end
+  end
 
   @spec features(provider()) :: [String.t()]
   def features(provider), do: Native.features(provider)
@@ -38,7 +63,7 @@ defmodule Optify do
   @doc """
   Get options and decode the returned JSON into Elixir terms.
   """
-  @spec get_options(provider(), String.t(), [String.t()], GetOptionsPreferences.t()) ::
+  @spec get_options(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, map() | list() | String.t() | number() | boolean() | nil} | {:error, String.t()}
   def get_options(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
     with {:ok, json} <-
@@ -59,7 +84,7 @@ defmodule Optify do
   @doc """
   Same as `get_options/4` but returns the value directly and raises on failure.
   """
-  @spec get_options!(provider(), String.t(), [String.t()], GetOptionsPreferences.t()) ::
+  @spec get_options!(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           map() | list() | String.t() | number() | boolean() | nil
   def get_options!(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
     case get_options(provider, key, feature_names, preferences) do
@@ -71,7 +96,7 @@ defmodule Optify do
   @doc """
   Get options as raw JSON.
   """
-  @spec get_options_json(provider(), String.t(), [String.t()], GetOptionsPreferences.t()) ::
+  @spec get_options_json(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, String.t()} | {:error, String.t()}
   def get_options_json(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
     Native.get_options_json_with_preferences(
@@ -85,7 +110,7 @@ defmodule Optify do
   @doc """
   Same as `get_options_json/4` but returns JSON directly and raises on failure.
   """
-  @spec get_options_json!(provider(), String.t(), [String.t()], GetOptionsPreferences.t()) ::
+  @spec get_options_json!(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           String.t()
   def get_options_json!(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
     case get_options_json(provider, key, feature_names, preferences) do

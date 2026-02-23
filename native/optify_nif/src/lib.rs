@@ -9,6 +9,7 @@ struct ProviderResource {
 struct PreferencesInput {
     are_configurable_strings_enabled: Option<bool>,
     constraints_json: Option<String>,
+    overrides_json: Option<String>,
     skip_feature_name_conversion: Option<bool>,
 }
 
@@ -69,7 +70,17 @@ fn get_options_json_with_preferences(
         prefs.skip_feature_name_conversion = skip;
     }
 
-    prefs.set_constraints_json(preferences.constraints_json.as_deref());
+    if let Some(constraints_json) = preferences.constraints_json.as_deref() {
+        let constraints_value = serde_json::from_str(constraints_json)
+            .map_err(|e| format!("Invalid constraints_json: {e}"))?;
+        prefs.set_constraints(Some(constraints_value));
+    }
+
+    if let Some(overrides_json) = preferences.overrides_json.as_deref() {
+        let overrides_value = serde_json::from_str(overrides_json)
+            .map_err(|e| format!("Invalid overrides_json: {e}"))?;
+        prefs.overrides = Some(overrides_value);
+    }
 
     provider
         .provider

@@ -5,6 +5,11 @@ defmodule OptifyTest do
 
   @configs Path.expand("fixtures/configs", __DIR__)
 
+  test "build! returns provider directly" do
+    provider = Optify.build!(@configs)
+    assert is_reference(provider)
+  end
+
   test "builds provider and returns merged options" do
     assert {:ok, provider} = Optify.build(@configs)
 
@@ -33,5 +38,20 @@ defmodule OptifyTest do
              Optify.get_options(provider, "myConfig", ["feature_conditioned"], prefs)
 
     assert options["conditioned"] == true
+  end
+
+  test "overrides are accepted via map preferences" do
+    provider = Optify.build!(@configs)
+
+    assert {:ok, options} =
+             Optify.get_options(provider, "myConfig", ["A"], %{
+               overrides: %{
+                 myConfig: %{
+                   handler: "override"
+                 }
+               }
+             })
+
+    assert options["handler"] == "override"
   end
 end
