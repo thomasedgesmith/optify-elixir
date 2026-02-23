@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "aliases": ["A"]
+  },
+  "options": {
+    "myConfig": {
+      "handler": "a",
+      "nested": {
+        "one": 1,
+        "shared": "from-a"
+      }
+    },
+    "flow": {
+      "handler": "a",
+      "timeout_ms": 100
+    }
+  }
+}
