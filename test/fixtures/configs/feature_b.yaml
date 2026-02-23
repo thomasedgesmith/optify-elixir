@@ -7,3 +7,6 @@ options:
     nested:
       two: 2
       shared: "from-b"
+  flow:
+    handler: "b"
+    timeout_ms: 200

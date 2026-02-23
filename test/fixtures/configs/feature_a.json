@@ -9,6 +9,10 @@
         "one": 1,
         "shared": "from-a"
       }
+    },
+    "flow": {
+      "handler": "a",
+      "timeout_ms": 100
     }
   }
 }
