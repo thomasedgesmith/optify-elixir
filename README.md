@@ -36,6 +36,20 @@ options =
 IO.inspect(options)
 ```
 
+## Provider from config
+
+You can configure provider paths in your app config and build directly:
+
+```elixir
+# config/runtime.exs or config/dev.exs
+config :optify, :provider,
+  directory: "config/optify"
+```
+
+```elixir
+provider = Optify.build_from_config!()
+```
+
 ## Preferences
 
 ```elixir

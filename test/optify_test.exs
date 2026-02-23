@@ -10,6 +10,23 @@ defmodule OptifyTest do
     assert is_reference(provider)
   end
 
+  test "build_from_config! builds provider from app env config" do
+    old_config = Application.get_env(:optify, :provider)
+
+    on_exit(fn ->
+      if old_config == nil do
+        Application.delete_env(:optify, :provider)
+      else
+        Application.put_env(:optify, :provider, old_config)
+      end
+    end)
+
+    Application.put_env(:optify, :provider, directory: @configs)
+
+    provider = Optify.build_from_config!()
+    assert is_reference(provider)
+  end
+
   test "builds provider and returns merged options" do
     assert {:ok, provider} = Optify.build(@configs)
 

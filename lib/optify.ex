@@ -47,6 +47,59 @@ defmodule Optify do
     end
   end
 
+  @doc """
+  Build provider from application config.
+
+  Reads from `config :optify, :provider, ...` and supports:
+  - `directory: "path/to/configs"`
+  - `directories: ["path/a", "path/b"]`
+  """
+  @spec build_from_config(keyword() | map() | nil) :: {:ok, provider()} | {:error, String.t()}
+  def build_from_config(config \\ nil)
+
+  def build_from_config(nil) do
+    build_from_config(Application.get_env(:optify, :provider, []))
+  end
+
+  def build_from_config(config) when is_list(config) do
+    cond do
+      directory = Keyword.get(config, :directory) ->
+        build(directory)
+
+      directories = Keyword.get(config, :directories) ->
+        build_from_directories(directories)
+
+      true ->
+        {:error,
+         "Missing provider config. Set :directory or :directories in config :optify, :provider"}
+    end
+  end
+
+  def build_from_config(config) when is_map(config) do
+    cond do
+      directory = Map.get(config, :directory) || Map.get(config, "directory") ->
+        build(directory)
+
+      directories = Map.get(config, :directories) || Map.get(config, "directories") ->
+        build_from_directories(directories)
+
+      true ->
+        {:error,
+         "Missing provider config. Set :directory or :directories in config :optify, :provider"}
+    end
+  end
+
+  @doc """
+  Same as `build_from_config/1` but raises on failure.
+  """
+  @spec build_from_config!(keyword() | map() | nil) :: provider()
+  def build_from_config!(config \\ nil) do
+    case build_from_config(config) do
+      {:ok, provider} -> provider
+      {:error, reason} -> raise ArgumentError, "Optify.build_from_config!/1 failed: #{reason}"
+    end
+  end
+
   @spec features(provider()) :: [String.t()]
   def features(provider), do: Native.features(provider)
 
