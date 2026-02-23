@@ -10,13 +10,11 @@ Configure provider once at app level, then fetch options by feature names.
 # config/runtime.exs (or dev.exs/prod.exs)
 config :optify, :provider,
   directory: "config/optify"
-
-# Auto-load once at app start
-config :optify, :auto_load_default_provider, true
-
-# Dev-only: auto-reload provider when config files change (filesystem events, no polling)
-config :optify, :auto_reload_default_provider, true
 ```
+
+Defaults:
+- provider auto-loads at app startup
+- provider auto-reloads in `:dev` when config files change
 
 Then in code:
 

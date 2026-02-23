@@ -43,7 +43,13 @@ defmodule Optify.DefaultProvider do
       auto_reload: auto_reload
     }
 
-    state = if auto_load or auto_reload, do: do_load(state), else: state
+    state =
+      if (auto_load or auto_reload) and directories != [] do
+        do_load(state)
+      else
+        state
+      end
+
     {:ok, maybe_start_watcher(state)}
   end
 
