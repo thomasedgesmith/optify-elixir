@@ -22,9 +22,12 @@ end
 
 Tuple + bang APIs are both available:
 
-- `Optify.get_options/4` → `{:ok, value} | {:error, reason}`
-- `Optify.get_options!/4` → `value` (raises on error)
-- `Optify.get_options_json/4` / `Optify.get_options_json!/4`
+- `Optify.get_options/4` / `Optify.get_options!/4` for one key (e.g. `"myConfig"`)
+- `Optify.get_all_options/3` / `Optify.get_all_options!/3` for the full merged config
+- JSON variants for both (`*_json` and `*_json!`)
+
+`"myConfig"` is just an example key from upstream docs. It is not special.
+Use any top-level key under `options` in your feature files.
 
 
 ```elixir
@@ -33,7 +36,11 @@ provider = Optify.build!("config/optify")
 options =
   Optify.get_options!(provider, "myConfig", ["feature_A", "feature_B"])
 
+full_config =
+  Optify.get_all_options!(provider, ["feature_A", "feature_B"])
+
 IO.inspect(options)
+IO.inspect(full_config)
 ```
 
 ## Provider from config
@@ -63,7 +70,9 @@ prefs = %Optify.GetOptionsPreferences{
 
 ## Phoenix / Plug
 
-Use `Optify.Plug` to assign options to `conn.assigns`:
+Use `Optify.Plug` to assign options to `conn.assigns`.
+
+With `key` (single options branch):
 
 ```elixir
 plug Optify.Plug,
@@ -71,6 +80,15 @@ plug Optify.Plug,
   key: "myConfig",
   feature_names: fn conn -> conn.assigns[:features] || [] end,
   assign: :my_config
+```
+
+Without `key` (full merged config):
+
+```elixir
+plug Optify.Plug,
+  provider: provider,
+  feature_names: fn conn -> conn.assigns[:features] || [] end,
+  assign: :optify_full
 ```
 
 If you want controller/request-level control, pass an options hash via assigns:

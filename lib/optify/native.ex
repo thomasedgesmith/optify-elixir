@@ -13,4 +13,7 @@ defmodule Optify.Native do
 
   def get_options_json_with_preferences(_provider, _key, _feature_names, _preferences),
     do: :erlang.nif_error(:nif_not_loaded)
+
+  def get_all_options_json_with_preferences(_provider, _feature_names, _preferences),
+    do: :erlang.nif_error(:nif_not_loaded)
 end

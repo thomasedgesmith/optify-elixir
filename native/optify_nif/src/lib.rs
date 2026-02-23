@@ -50,13 +50,7 @@ fn get_canonical_feature_names(
         .get_canonical_feature_names(&feature_names)
 }
 
-#[rustler::nif]
-fn get_options_json_with_preferences(
-    provider: ResourceArc<ProviderResource>,
-    key: String,
-    feature_names: Vec<String>,
-    preferences: PreferencesInput,
-) -> Result<String, String> {
+fn make_preferences(preferences: PreferencesInput) -> Result<GetOptionsPreferences, String> {
     let mut prefs = GetOptionsPreferences::new();
 
     if preferences
@@ -82,9 +76,35 @@ fn get_options_json_with_preferences(
         prefs.overrides = Some(overrides_value);
     }
 
+    Ok(prefs)
+}
+
+#[rustler::nif]
+fn get_options_json_with_preferences(
+    provider: ResourceArc<ProviderResource>,
+    key: String,
+    feature_names: Vec<String>,
+    preferences: PreferencesInput,
+) -> Result<String, String> {
+    let prefs = make_preferences(preferences)?;
+
     provider
         .provider
         .get_options_with_preferences(&key, &feature_names, None, Some(&prefs))
+        .map(|value| value.to_string())
+}
+
+#[rustler::nif]
+fn get_all_options_json_with_preferences(
+    provider: ResourceArc<ProviderResource>,
+    feature_names: Vec<String>,
+    preferences: PreferencesInput,
+) -> Result<String, String> {
+    let prefs = make_preferences(preferences)?;
+
+    provider
+        .provider
+        .get_all_options(&feature_names, None, Some(&prefs))
         .map(|value| value.to_string())
 }
 

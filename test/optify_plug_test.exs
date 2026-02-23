@@ -47,4 +47,22 @@ defmodule Optify.PlugTest do
     assert conn.assigns.my_config["conditioned"] == true
     assert conn.assigns.my_config["handler"] == "a"
   end
+
+  test "plug works without key and assigns full config" do
+    provider = Optify.build!(@configs)
+
+    conn =
+      :get
+      |> conn("/")
+      |> assign(:features, ["A"])
+      |> Optify.Plug.call(
+        Optify.Plug.init(
+          provider: provider,
+          feature_names: fn conn -> conn.assigns.features end,
+          assign: :full_config
+        )
+      )
+
+    assert conn.assigns.full_config["myConfig"]["handler"] == "a"
+  end
 end

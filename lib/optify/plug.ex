@@ -15,7 +15,7 @@ defmodule Optify.Plug do
   @impl Plug
   def init(opts) do
     provider = Keyword.fetch!(opts, :provider)
-    key = Keyword.fetch!(opts, :key)
+    key = Keyword.get(opts, :key)
 
     assign = Keyword.get(opts, :assign, :optify_options)
     feature_names = Keyword.get(opts, :feature_names, [])
@@ -59,7 +59,14 @@ defmodule Optify.Plug do
       |> default_to(resolve(conn, opts[:preferences], %GetOptionsPreferences{}))
       |> GetOptionsPreferences.normalize()
 
-    case Optify.get_options(opts[:provider], opts[:key], features, preferences) do
+    result =
+      if key = opts[:key] do
+        Optify.get_options(opts[:provider], key, features, preferences)
+      else
+        Optify.get_all_options(opts[:provider], features, preferences)
+      end
+
+    case result do
       {:ok, options_value} -> assign(conn, opts[:assign], options_value)
       {:error, reason} -> raise "Optify.Plug failed to fetch options: #{reason}"
     end

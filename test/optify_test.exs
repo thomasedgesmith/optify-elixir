@@ -38,6 +38,16 @@ defmodule OptifyTest do
     assert options["nested"]["shared"] == "from-b"
   end
 
+  test "can fetch entire merged config without key" do
+    provider = Optify.build!(@configs)
+
+    assert {:ok, all_options} = Optify.get_all_options(provider, ["A"])
+    assert all_options["myConfig"]["handler"] == "a"
+
+    all_options_bang = Optify.get_all_options!(provider, ["B"])
+    assert all_options_bang["myConfig"]["handler"] == "b"
+  end
+
   test "canonical feature name lookup is case-insensitive" do
     assert {:ok, provider} = Optify.build(@configs)
     assert {:ok, "feature_a"} = Optify.get_canonical_feature_name(provider, "a")

@@ -114,7 +114,7 @@ defmodule Optify do
     do: Native.get_canonical_feature_names(provider, feature_names)
 
   @doc """
-  Get options and decode the returned JSON into Elixir terms.
+  Get options for one key and decode the returned JSON into Elixir terms.
   """
   @spec get_options(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, map() | list() | String.t() | number() | boolean() | nil} | {:error, String.t()}
@@ -125,12 +125,24 @@ defmodule Optify do
              key,
              feature_names,
              GetOptionsPreferences.to_nif_map(preferences)
-           ),
-         {:ok, decoded} <- Jason.decode(json) do
-      {:ok, decoded}
-    else
-      {:error, reason} when is_binary(reason) -> {:error, reason}
-      {:error, %Jason.DecodeError{} = err} -> {:error, Exception.message(err)}
+           ) do
+      decode_json(json)
+    end
+  end
+
+  @doc """
+  Get all merged options and decode JSON into Elixir terms.
+  """
+  @spec get_all_options(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
+          {:ok, map() | list() | String.t() | number() | boolean() | nil} | {:error, String.t()}
+  def get_all_options(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
+    with {:ok, json} <-
+           Native.get_all_options_json_with_preferences(
+             provider,
+             feature_names,
+             GetOptionsPreferences.to_nif_map(preferences)
+           ) do
+      decode_json(json)
     end
   end
 
@@ -147,7 +159,19 @@ defmodule Optify do
   end
 
   @doc """
-  Get options as raw JSON.
+  Same as `get_all_options/3` but returns value directly and raises on failure.
+  """
+  @spec get_all_options!(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
+          map() | list() | String.t() | number() | boolean() | nil
+  def get_all_options!(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
+    case get_all_options(provider, feature_names, preferences) do
+      {:ok, options} -> options
+      {:error, reason} -> raise ArgumentError, "Optify.get_all_options!/3 failed: #{reason}"
+    end
+  end
+
+  @doc """
+  Get options for one key as raw JSON.
   """
   @spec get_options_json(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, String.t()} | {:error, String.t()}
@@ -155,6 +179,19 @@ defmodule Optify do
     Native.get_options_json_with_preferences(
       provider,
       key,
+      feature_names,
+      GetOptionsPreferences.to_nif_map(preferences)
+    )
+  end
+
+  @doc """
+  Get all merged options as raw JSON.
+  """
+  @spec get_all_options_json(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  def get_all_options_json(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
+    Native.get_all_options_json_with_preferences(
+      provider,
       feature_names,
       GetOptionsPreferences.to_nif_map(preferences)
     )
@@ -169,6 +206,25 @@ defmodule Optify do
     case get_options_json(provider, key, feature_names, preferences) do
       {:ok, json} -> json
       {:error, reason} -> raise ArgumentError, "Optify.get_options_json!/4 failed: #{reason}"
+    end
+  end
+
+  @doc """
+  Same as `get_all_options_json/3` but returns JSON directly and raises on failure.
+  """
+  @spec get_all_options_json!(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
+          String.t()
+  def get_all_options_json!(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
+    case get_all_options_json(provider, feature_names, preferences) do
+      {:ok, json} -> json
+      {:error, reason} -> raise ArgumentError, "Optify.get_all_options_json!/3 failed: #{reason}"
+    end
+  end
+
+  defp decode_json(json) do
+    case Jason.decode(json) do
+      {:ok, decoded} -> {:ok, decoded}
+      {:error, %Jason.DecodeError{} = err} -> {:error, Exception.message(err)}
     end
   end
 end
