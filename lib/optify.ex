@@ -1,8 +1,12 @@
 defmodule Optify do
   @moduledoc """
-  Elixir client for Optify backed by the upstream Rust crate.
+  Optify high-level API.
 
-  This module exposes the main provider APIs and returns Elixir maps by default.
+  Public API (stable):
+  - `get_options/2`
+  - `get_options/4`
+  - `get_options!/2`
+  - `get_options!/4`
   """
 
   alias Optify.DefaultProvider
@@ -12,15 +16,11 @@ defmodule Optify do
 
   @type provider :: reference()
 
-  @doc """
-  Build a provider from one config directory.
-  """
+  @doc false
   @spec build(String.t()) :: {:ok, provider()} | {:error, String.t()}
   def build(directory), do: Native.build_provider(directory)
 
-  @doc """
-  Same as `build/1` but returns the provider directly and raises on failure.
-  """
+  @doc false
   @spec build!(String.t()) :: provider()
   def build!(directory) do
     case build(directory) do
@@ -29,15 +29,11 @@ defmodule Optify do
     end
   end
 
-  @doc """
-  Build a provider from multiple config directories.
-  """
+  @doc false
   @spec build_from_directories([String.t()]) :: {:ok, provider()} | {:error, String.t()}
   def build_from_directories(directories), do: Native.build_provider_from_directories(directories)
 
-  @doc """
-  Same as `build_from_directories/1` but returns provider directly and raises on failure.
-  """
+  @doc false
   @spec build_from_directories!([String.t()]) :: provider()
   def build_from_directories!(directories) do
     case build_from_directories(directories) do
@@ -49,19 +45,11 @@ defmodule Optify do
     end
   end
 
-  @doc """
-  Build provider from application config.
-
-  Reads from `config :optify, :provider, ...` and supports:
-  - `directory: "path/to/configs"`
-  - `directories: ["path/a", "path/b"]`
-  """
+  @doc false
   @spec build_from_config(keyword() | map() | nil) :: {:ok, provider()} | {:error, String.t()}
   def build_from_config(config \\ nil)
 
-  def build_from_config(nil) do
-    build_from_config(Application.get_env(:optify, :provider, []))
-  end
+  def build_from_config(nil), do: build_from_config(Application.get_env(:optify, :provider, []))
 
   def build_from_config(config) when is_list(config) do
     cond do
@@ -91,9 +79,7 @@ defmodule Optify do
     end
   end
 
-  @doc """
-  Same as `build_from_config/1` but raises on failure.
-  """
+  @doc false
   @spec build_from_config!(keyword() | map() | nil) :: provider()
   def build_from_config!(config \\ nil) do
     case build_from_config(config) do
@@ -102,27 +88,19 @@ defmodule Optify do
     end
   end
 
-  @doc """
-  Set the default provider used by convenience APIs like `get_options/1`.
-  """
+  @doc false
   @spec set_default_provider(provider()) :: :ok
   def set_default_provider(provider), do: DefaultProvider.set(provider)
 
-  @doc """
-  Get the default provider.
-  """
+  @doc false
   @spec default_provider() :: provider() | nil
   def default_provider, do: DefaultProvider.get()
 
-  @doc """
-  Get the default provider and raise if none is configured.
-  """
+  @doc false
   @spec default_provider!() :: provider()
   def default_provider!, do: DefaultProvider.get!()
 
-  @doc """
-  Build a provider from config and set it as default.
-  """
+  @doc false
   @spec load_default_provider!(keyword() | map() | nil) :: provider()
   def load_default_provider!(config \\ nil) do
     provider = build_from_config!(config)
@@ -130,34 +108,32 @@ defmodule Optify do
     provider
   end
 
+  @doc false
   @spec features(provider()) :: [String.t()]
   def features(provider), do: Native.features(provider)
 
+  @doc false
   @spec get_canonical_feature_name(provider(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}
   def get_canonical_feature_name(provider, feature_name),
     do: Native.get_canonical_feature_name(provider, feature_name)
 
+  @doc false
   @spec get_canonical_feature_names(provider(), [String.t()]) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def get_canonical_feature_names(provider, feature_names),
     do: Native.get_canonical_feature_names(provider, feature_names)
 
   @doc """
-  Convenience API: get full merged options using the default provider.
+  Get merged options using the default provider.
 
-  Example:
-      options = Optify.get_options!(["feature_a"])
-      options.flow
-
-  By default keys are atomized to support dot access.
+  Returns atom-keyed maps by default so dot access works (e.g. `options.flow`).
   """
   @spec get_options([String.t()], keyword()) ::
           {:ok, map() | list() | String.t() | number() | boolean() | nil} | {:error, String.t()}
   def get_options(feature_names, opts \\ []) when is_list(feature_names) and is_list(opts) do
     provider = Keyword.get(opts, :provider, default_provider!())
     preferences = Keyword.get(opts, :preferences, %GetOptionsPreferences{})
-
     key_mode = Keyword.get(opts, :keys, :atoms)
     as_module = Keyword.get(opts, :as)
 
@@ -169,7 +145,7 @@ defmodule Optify do
   end
 
   @doc """
-  Bang variant of `get_options/2` convenience API.
+  Bang variant of `get_options/2`.
   """
   @spec get_options!([String.t()], keyword()) ::
           map() | list() | String.t() | number() | boolean() | nil
@@ -181,7 +157,7 @@ defmodule Optify do
   end
 
   @doc """
-  Get options for one key and decode the returned JSON into Elixir terms.
+  Get options for one top-level key from the given provider.
   """
   @spec get_options(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, map() | list() | String.t() | number() | boolean() | nil} | {:error, String.t()}
@@ -198,8 +174,18 @@ defmodule Optify do
   end
 
   @doc """
-  Get all merged options and decode JSON into Elixir terms.
+  Bang variant of `get_options/4`.
   """
+  @spec get_options!(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
+          map() | list() | String.t() | number() | boolean() | nil
+  def get_options!(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
+    case get_options(provider, key, feature_names, preferences) do
+      {:ok, options} -> options
+      {:error, reason} -> raise ArgumentError, "Optify.get_options!/4 failed: #{reason}"
+    end
+  end
+
+  @doc false
   @spec get_all_options(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, map() | list() | String.t() | number() | boolean() | nil} | {:error, String.t()}
   def get_all_options(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
@@ -213,21 +199,7 @@ defmodule Optify do
     end
   end
 
-  @doc """
-  Same as `get_options/4` but returns the value directly and raises on failure.
-  """
-  @spec get_options!(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
-          map() | list() | String.t() | number() | boolean() | nil
-  def get_options!(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
-    case get_options(provider, key, feature_names, preferences) do
-      {:ok, options} -> options
-      {:error, reason} -> raise ArgumentError, "Optify.get_options!/4 failed: #{reason}"
-    end
-  end
-
-  @doc """
-  Same as `get_all_options/3` but returns value directly and raises on failure.
-  """
+  @doc false
   @spec get_all_options!(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
           map() | list() | String.t() | number() | boolean() | nil
   def get_all_options!(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
@@ -237,9 +209,7 @@ defmodule Optify do
     end
   end
 
-  @doc """
-  Get options for one key as raw JSON.
-  """
+  @doc false
   @spec get_options_json(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, String.t()} | {:error, String.t()}
   def get_options_json(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
@@ -251,9 +221,7 @@ defmodule Optify do
     )
   end
 
-  @doc """
-  Get all merged options as raw JSON.
-  """
+  @doc false
   @spec get_all_options_json(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, String.t()} | {:error, String.t()}
   def get_all_options_json(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
@@ -264,9 +232,7 @@ defmodule Optify do
     )
   end
 
-  @doc """
-  Same as `get_options_json/4` but returns JSON directly and raises on failure.
-  """
+  @doc false
   @spec get_options_json!(provider(), String.t(), [String.t()], GetOptionsPreferences.input_t()) ::
           String.t()
   def get_options_json!(provider, key, feature_names, preferences \\ %GetOptionsPreferences{}) do
@@ -276,9 +242,7 @@ defmodule Optify do
     end
   end
 
-  @doc """
-  Same as `get_all_options_json/3` but returns JSON directly and raises on failure.
-  """
+  @doc false
   @spec get_all_options_json!(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
           String.t()
   def get_all_options_json!(provider, feature_names, preferences \\ %GetOptionsPreferences{}) do
@@ -289,10 +253,7 @@ defmodule Optify do
   end
 
   defp cast_output(value, nil), do: {:ok, value}
-
-  defp cast_output(value, module) when is_atom(module) do
-    StructCaster.cast(module, value)
-  end
+  defp cast_output(value, module) when is_atom(module), do: StructCaster.cast(module, value)
 
   defp transform_keys(value, :strings), do: value
 
@@ -302,9 +263,8 @@ defmodule Optify do
     |> Map.new()
   end
 
-  defp transform_keys(value, :atoms) when is_list(value) do
-    Enum.map(value, &transform_keys(&1, :atoms))
-  end
+  defp transform_keys(value, :atoms) when is_list(value),
+    do: Enum.map(value, &transform_keys(&1, :atoms))
 
   defp transform_keys(value, _), do: value
 

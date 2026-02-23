@@ -27,7 +27,6 @@ defmodule Optify.MixProject do
     [
       {:rustler, "~> 0.37", runtime: false},
       {:jason, "~> 1.4"},
-      {:plug, "~> 1.15"},
       {:file_system, "~> 1.1"}
     ]
   end

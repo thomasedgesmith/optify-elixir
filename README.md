@@ -55,18 +55,6 @@ If `as:` points to a struct module without `from_optify/1`, Optify will attempt 
 - Bang APIs:
   - `Optify.get_options!/2`
   - `Optify.get_options!/4`
-- Full config APIs:
-  - `Optify.get_all_options/3`
-  - `Optify.get_all_options!/3`
-- Provider setup:
-  - `Optify.build!/1`
-  - `Optify.build_from_config!/0`
-  - `Optify.load_default_provider!/0`
-
-## Optional Plug integration
-
-`Optify.Plug` is available, but optional.
-If your app prefers explicit controller/service calls, you can skip the plug entirely.
 
 ## Development
 
