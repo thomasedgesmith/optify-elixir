@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
+      - name: Clean build artifacts
+        run: rm -rf _build
+
       - name: Check Elixir formatting
         run: mix format --check-formatted
 
