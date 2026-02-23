@@ -14,9 +14,8 @@ config :optify, :provider,
 # Auto-load once at app start
 config :optify, :auto_load_default_provider, true
 
-# Dev-only: auto-reload provider when config files change
+# Dev-only: auto-reload provider when config files change (filesystem events, no polling)
 config :optify, :auto_reload_default_provider, true
-config :optify, :provider_poll_interval_ms, 1_000
 ```
 
 Then in code:

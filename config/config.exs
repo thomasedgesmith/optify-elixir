@@ -18,4 +18,3 @@ config :optify, Optify.Native,
 
 # Auto-reload default provider when config files change (great for dev):
 # config :optify, :auto_reload_default_provider, true
-# config :optify, :provider_poll_interval_ms, 1_000

@@ -3,14 +3,11 @@ defmodule Optify.DefaultProvider do
 
   use GenServer
 
-  @tick_ms 1_000
-
   @type state :: %{
           provider: reference() | nil,
           directories: [String.t()],
-          signature: integer() | nil,
-          auto_reload: boolean(),
-          poll_interval_ms: non_neg_integer()
+          watcher_pid: pid() | nil,
+          auto_reload: boolean()
         }
 
   def start_link(_opts) do
@@ -38,26 +35,16 @@ defmodule Optify.DefaultProvider do
 
     auto_load = Application.get_env(:optify, :auto_load_default_provider, false)
     auto_reload = Application.get_env(:optify, :auto_reload_default_provider, false)
-    poll_interval_ms = Application.get_env(:optify, :provider_poll_interval_ms, @tick_ms)
 
     state = %{
       provider: nil,
       directories: directories,
-      signature: nil,
-      auto_reload: auto_reload,
-      poll_interval_ms: poll_interval_ms
+      watcher_pid: nil,
+      auto_reload: auto_reload
     }
 
-    state =
-      if auto_load or auto_reload do
-        do_load(state)
-      else
-        state
-      end
-
-    if state.auto_reload, do: schedule_tick(state.poll_interval_ms)
-
-    {:ok, state}
+    state = if auto_load or auto_reload, do: do_load(state), else: state
+    {:ok, maybe_start_watcher(state)}
   end
 
   @impl true
@@ -75,29 +62,41 @@ defmodule Optify.DefaultProvider do
   end
 
   @impl true
-  def handle_info(:tick, state) do
-    next_state = maybe_reload(state)
-    schedule_tick(next_state.poll_interval_ms)
-    {:noreply, next_state}
+  def handle_info(
+        {:file_event, watcher_pid, {_path, events}},
+        %{watcher_pid: watcher_pid} = state
+      ) do
+    # FileSystem adapters differ slightly, so match broadly for change/create/remove.
+    if Enum.any?(events, &(&1 in [:modified, :created, :removed])) do
+      {:noreply, do_load(state)}
+    else
+      {:noreply, state}
+    end
   end
 
-  defp schedule_tick(ms), do: Process.send_after(self(), :tick, ms)
+  def handle_info({:file_event, _watcher_pid, :stop}, state), do: {:noreply, state}
+  def handle_info(_msg, state), do: {:noreply, state}
 
-  defp maybe_reload(%{directories: []} = state), do: state
+  @impl true
+  def terminate(_reason, %{watcher_pid: nil}), do: :ok
 
-  defp maybe_reload(state) do
-    new_signature = signature(state.directories)
+  def terminate(_reason, %{watcher_pid: watcher_pid}) do
+    Process.exit(watcher_pid, :normal)
+    :ok
+  end
 
-    if state.signature != nil and state.signature != new_signature do
-      do_load(%{state | signature: new_signature})
-    else
-      %{state | signature: new_signature}
-    end
+  defp maybe_start_watcher(%{auto_reload: false} = state), do: state
+  defp maybe_start_watcher(%{directories: []} = state), do: state
+
+  defp maybe_start_watcher(state) do
+    {:ok, watcher_pid} = FileSystem.start_link(dirs: state.directories)
+    FileSystem.subscribe(watcher_pid)
+    %{state | watcher_pid: watcher_pid}
   end
 
   defp do_load(state) do
     provider = Optify.build_from_config!()
-    %{state | provider: provider, signature: signature(state.directories)}
+    %{state | provider: provider}
   end
 
   defp directories_from_config(config) when is_list(config) do
@@ -115,25 +114,5 @@ defmodule Optify.DefaultProvider do
       {_, directories} when is_list(directories) -> directories
       _ -> []
     end
-  end
-
-  defp signature(directories) do
-    directories
-    |> Enum.flat_map(&list_files/1)
-    |> Enum.map(fn path ->
-      case File.stat(path) do
-        {:ok, stat} -> {path, stat.size, stat.mtime}
-        _ -> {path, :missing}
-      end
-    end)
-    |> Enum.sort()
-    |> :erlang.phash2()
-  end
-
-  defp list_files(directory) do
-    directory
-    |> Path.join("**/*")
-    |> Path.wildcard(match_dot: true)
-    |> Enum.filter(&File.regular?/1)
   end
 end
