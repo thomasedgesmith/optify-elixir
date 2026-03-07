@@ -33,7 +33,7 @@ defmodule Optify.DefaultProvider do
     provider_config = Application.get_env(:optify, :provider, [])
     directories = directories_from_config(provider_config)
 
-    auto_load = Application.get_env(:optify, :auto_load_default_provider, false)
+    auto_load = Application.get_env(:optify, :auto_load_default_provider, true)
     auto_reload = Application.get_env(:optify, :auto_reload_default_provider, false)
 
     state = %{

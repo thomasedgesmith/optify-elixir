@@ -28,6 +28,25 @@ defmodule OptifyTest do
     assert is_reference(provider)
   end
 
+  test "default provider auto-loads by default when provider config exists" do
+    old_config = Application.get_env(:optify, :provider)
+    old_auto_load = Application.get_env(:optify, :auto_load_default_provider)
+    old_auto_reload = Application.get_env(:optify, :auto_reload_default_provider)
+
+    on_exit(fn ->
+      restore_env(:provider, old_config)
+      restore_env(:auto_load_default_provider, old_auto_load)
+      restore_env(:auto_reload_default_provider, old_auto_reload)
+    end)
+
+    Application.put_env(:optify, :provider, directory: @configs)
+    Application.delete_env(:optify, :auto_load_default_provider)
+    Application.put_env(:optify, :auto_reload_default_provider, false)
+
+    assert {:ok, state} = Optify.DefaultProvider.init(%{})
+    assert is_reference(state.provider)
+  end
+
   test "build_with_schema and build_from_config! support schema validation" do
     assert {:ok, provider} = Optify.build_with_schema(@configs, @schema)
     assert is_reference(provider)
@@ -149,4 +168,7 @@ defmodule OptifyTest do
 
     assert options["handler"] == "override"
   end
+
+  defp restore_env(key, nil), do: Application.delete_env(:optify, key)
+  defp restore_env(key, value), do: Application.put_env(:optify, key, value)
 end

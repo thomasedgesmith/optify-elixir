@@ -6,15 +6,7 @@ Elixir client for [Optify](https://github.com/juharris/optify), powered by the u
 
 Configure the default provider in your Phoenix app config.
 `optify-elixir` starts its own `Optify.DefaultProvider` process, so you do not need to add it to your app's supervisor tree manually.
-
-```elixir
-# config/config.exs
-import Config
-
-config :optify,
-  auto_load_default_provider: true,
-  auto_reload_default_provider: false
-```
+The default provider auto-loads automatically once `:optify, :provider` is configured.
 
 ```elixir
 # config/dev.exs
@@ -45,7 +37,7 @@ config :optify, :provider,
 ```
 
 Recommended behavior:
-- always auto-load the default provider
+- rely on the built-in default provider auto-load
 - only auto-reload from disk in `:dev`
 - resolve the config path in `runtime.exs`
 
