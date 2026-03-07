@@ -12,6 +12,7 @@ defmodule Optify do
   alias Optify.DefaultProvider
   alias Optify.GetOptionsPreferences
   alias Optify.Native
+  alias Optify.OptionShapeCache
   alias Optify.StructCaster
 
   @type provider :: reference()
@@ -305,6 +306,9 @@ defmodule Optify do
   Get merged options using the default provider.
 
   Returns atom-keyed maps by default so dot access works (e.g. `options.flow`).
+  Known nested option paths are hydrated with `nil` defaults so
+  `options.flow.handler` remains safe even when `flow` is absent from the
+  selected feature set.
   """
   @spec get_options([String.t()], keyword()) ::
           {:ok, map() | list() | String.t() | number() | boolean() | nil} | {:error, String.t()}
@@ -316,6 +320,7 @@ defmodule Optify do
 
     with {:ok, options} <- get_all_options(provider, feature_names, preferences) do
       options
+      |> hydrate_known_paths(provider)
       |> transform_keys(key_mode)
       |> cast_output(as_module)
     end
@@ -429,8 +434,23 @@ defmodule Optify do
     end
   end
 
+  @doc false
+  @spec warm_option_shape(provider()) :: :ok
+  def warm_option_shape(provider) do
+    _shape = option_shape(provider)
+    :ok
+  end
+
   defp cast_output(value, nil), do: {:ok, value}
   defp cast_output(value, module) when is_atom(module), do: StructCaster.cast(module, value)
+
+  defp hydrate_known_paths(nil, provider), do: default_for_shape(option_shape(provider))
+
+  defp hydrate_known_paths(value, provider) when is_map(value) do
+    fill_missing_paths(value, option_shape(provider))
+  end
+
+  defp hydrate_known_paths(value, _provider), do: value
 
   defp transform_keys(value, :strings), do: value
 
@@ -448,6 +468,63 @@ defmodule Optify do
   defp to_atom_key(key) when is_atom(key), do: key
   defp to_atom_key(key) when is_binary(key), do: String.to_atom(key)
   defp to_atom_key(key), do: key
+
+  defp option_shape(provider) do
+    OptionShapeCache.fetch(provider, fn -> build_option_shape(provider) end)
+  end
+
+  defp build_option_shape(provider) do
+    provider
+    |> get_features()
+    |> Enum.reduce(%{}, fn feature_name, acc ->
+      feature_shape =
+        provider
+        |> get_all_options!([feature_name])
+        |> build_shape()
+
+      merge_shapes(acc, feature_shape)
+    end)
+  end
+
+  defp build_shape(value) when is_map(value) do
+    Map.new(value, fn {key, nested_value} -> {key, build_shape(nested_value)} end)
+  end
+
+  defp build_shape(_value), do: nil
+
+  defp merge_shapes(left, right) when is_map(left) and is_map(right) do
+    Map.merge(left, right, fn _key, left_value, right_value ->
+      merge_shapes(left_value, right_value)
+    end)
+  end
+
+  defp merge_shapes(left, right) when is_map(left) and not is_map(right), do: left
+  defp merge_shapes(left, right) when not is_map(left) and is_map(right), do: right
+  defp merge_shapes(_left, right), do: right
+
+  defp fill_missing_paths(value, shape) when is_map(value) and is_map(shape) do
+    Enum.reduce(shape, value, fn {key, nested_shape}, acc ->
+      case Map.fetch(acc, key) do
+        {:ok, nested_value} ->
+          Map.put(acc, key, fill_missing_value(nested_value, nested_shape))
+
+        :error ->
+          Map.put(acc, key, default_for_shape(nested_shape))
+      end
+    end)
+  end
+
+  defp fill_missing_value(nil, nested_shape) when is_map(nested_shape),
+    do: default_for_shape(nested_shape)
+
+  defp fill_missing_value(value, nested_shape) when is_map(value) and is_map(nested_shape) do
+    fill_missing_paths(value, nested_shape)
+  end
+
+  defp fill_missing_value(value, _nested_shape), do: value
+
+  defp default_for_shape(shape) when is_map(shape), do: fill_missing_paths(%{}, shape)
+  defp default_for_shape(_shape), do: nil
 
   defp extract_build_config(config) when is_list(config) do
     schema_path = Keyword.get(config, :schema_path) || Keyword.get(config, :schema)

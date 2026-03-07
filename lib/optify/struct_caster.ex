@@ -21,16 +21,14 @@ defmodule Optify.StructCaster do
     base = struct(module)
 
     updated =
-      Enum.reduce(Map.keys(base), base, fn key, acc ->
-        string_key = Atom.to_string(key)
-
-        case Map.fetch(map, string_key) do
+      Enum.reduce(Map.from_struct(base), base, fn {key, _default}, acc ->
+        case fetch_key(map, key) do
           {:ok, value} -> Map.put(acc, key, cast_field(Map.get(base, key), value))
           :error -> acc
         end
       end)
 
-    struct(module, updated)
+    updated
   end
 
   defp cast_field(%_{} = nested_struct, value) when is_map(value) do
@@ -38,5 +36,17 @@ defmodule Optify.StructCaster do
     to_struct(nested_module, value)
   end
 
+  defp cast_field(%_{} = nested_struct, nil), do: nested_struct
+
   defp cast_field(_default, value), do: value
+
+  defp fetch_key(map, key) when is_atom(key) do
+    case Map.fetch(map, key) do
+      {:ok, value} ->
+        {:ok, value}
+
+      :error ->
+        Map.fetch(map, Atom.to_string(key))
+    end
+  end
 end

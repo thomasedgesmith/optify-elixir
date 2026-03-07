@@ -3,6 +3,8 @@ defmodule Optify.DefaultProvider do
 
   use GenServer
 
+  alias Optify.OptionShapeCache
+
   @type state :: %{
           provider: reference() | nil,
           directories: [String.t()],
@@ -55,6 +57,9 @@ defmodule Optify.DefaultProvider do
 
   @impl true
   def handle_call({:set, provider}, _from, state) do
+    OptionShapeCache.delete(state.provider)
+    warm_option_shape(provider)
+
     {:reply, :ok, %{state | provider: provider}}
   end
 
@@ -102,6 +107,8 @@ defmodule Optify.DefaultProvider do
 
   defp do_load(state) do
     provider = Optify.build_from_config!()
+    OptionShapeCache.delete(state.provider)
+    warm_option_shape(provider)
     %{state | provider: provider}
   end
 
@@ -121,4 +128,7 @@ defmodule Optify.DefaultProvider do
       _ -> []
     end
   end
+
+  defp warm_option_shape(nil), do: :ok
+  defp warm_option_shape(provider), do: Optify.warm_option_shape(provider)
 end

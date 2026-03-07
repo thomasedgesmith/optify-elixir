@@ -94,6 +94,11 @@ options.flow.handler
 `flow` is just a normal top-level key under `options` in your feature files.
 No special key name is required.
 
+The high-level `Optify.get_options!/1` and `Optify.get_options!/2` APIs also hydrate
+known nested option paths with `nil` defaults. If another feature defines
+`options.flow.handler`, then `options.flow.handler` stays safe even when the selected
+feature set does not define `flow` at all.
+
 Aliases work too:
 
 ```elixir
@@ -129,7 +134,7 @@ The task:
 - resolves aliases to canonical feature names
 - applies imports before dumping the merged result
 
-## Typed options (structs)
+## Advanced: typed options
 
 You can cast the merged options into a struct/module:
 
@@ -144,6 +149,9 @@ end
 
 flow = Optify.get_options!(["feature_a"], as: MyApp.FlowOptions)
 ```
+
+This is optional. The default `get_options!` API already returns dot-friendly maps,
+so you only need `as:` when you specifically want a typed struct/module.
 
 If `as:` points to a struct module without `from_optify/1`, Optify will attempt direct key-based casting.
 
