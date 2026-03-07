@@ -1,6 +1,7 @@
 metadata:
   aliases:
     - "B"
+  owners: "team-b@example.com"
 options:
   myConfig:
     handler: "b"

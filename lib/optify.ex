@@ -15,6 +15,7 @@ defmodule Optify do
   alias Optify.StructCaster
 
   @type provider :: reference()
+  @type build_config_input :: keyword() | map() | nil
 
   @doc false
   @spec build(String.t()) :: {:ok, provider()} | {:error, String.t()}
@@ -26,6 +27,20 @@ defmodule Optify do
     case build(directory) do
       {:ok, provider} -> provider
       {:error, reason} -> raise ArgumentError, "Optify.build!/1 failed: #{reason}"
+    end
+  end
+
+  @doc false
+  @spec build_with_schema(String.t(), String.t()) :: {:ok, provider()} | {:error, String.t()}
+  def build_with_schema(directory, schema_path),
+    do: Native.build_provider_with_schema(directory, schema_path)
+
+  @doc false
+  @spec build_with_schema!(String.t(), String.t()) :: provider()
+  def build_with_schema!(directory, schema_path) do
+    case build_with_schema(directory, schema_path) do
+      {:ok, provider} -> provider
+      {:error, reason} -> raise ArgumentError, "Optify.build_with_schema!/2 failed: #{reason}"
     end
   end
 
@@ -46,41 +61,51 @@ defmodule Optify do
   end
 
   @doc false
-  @spec build_from_config(keyword() | map() | nil) :: {:ok, provider()} | {:error, String.t()}
-  def build_from_config(config \\ nil)
+  @spec build_from_directories_with_schema([String.t()], String.t()) ::
+          {:ok, provider()} | {:error, String.t()}
+  def build_from_directories_with_schema(directories, schema_path),
+    do: Native.build_provider_from_directories_with_schema(directories, schema_path)
 
-  def build_from_config(nil), do: build_from_config(Application.get_env(:optify, :provider, []))
+  @doc false
+  @spec build_from_directories_with_schema!([String.t()], String.t()) :: provider()
+  def build_from_directories_with_schema!(directories, schema_path) do
+    case build_from_directories_with_schema(directories, schema_path) do
+      {:ok, provider} ->
+        provider
 
-  def build_from_config(config) when is_list(config) do
-    cond do
-      directory = Keyword.get(config, :directory) ->
-        build(directory)
-
-      directories = Keyword.get(config, :directories) ->
-        build_from_directories(directories)
-
-      true ->
-        {:error,
-         "Missing provider config. Set :directory or :directories in config :optify, :provider"}
-    end
-  end
-
-  def build_from_config(config) when is_map(config) do
-    cond do
-      directory = Map.get(config, :directory) || Map.get(config, "directory") ->
-        build(directory)
-
-      directories = Map.get(config, :directories) || Map.get(config, "directories") ->
-        build_from_directories(directories)
-
-      true ->
-        {:error,
-         "Missing provider config. Set :directory or :directories in config :optify, :provider"}
+      {:error, reason} ->
+        raise ArgumentError,
+              "Optify.build_from_directories_with_schema!/2 failed: #{reason}"
     end
   end
 
   @doc false
-  @spec build_from_config!(keyword() | map() | nil) :: provider()
+  @spec build_from_config(build_config_input()) :: {:ok, provider()} | {:error, String.t()}
+  def build_from_config(config \\ nil)
+
+  def build_from_config(nil), do: build_from_config(Application.get_env(:optify, :provider, []))
+
+  def build_from_config(config) when is_list(config) or is_map(config) do
+    case extract_build_config(config) do
+      {:directory, directory, nil} ->
+        build(directory)
+
+      {:directory, directory, schema_path} ->
+        build_with_schema(directory, schema_path)
+
+      {:directories, directories, nil} ->
+        build_from_directories(directories)
+
+      {:directories, directories, schema_path} ->
+        build_from_directories_with_schema(directories, schema_path)
+
+      :error ->
+        {:error, missing_provider_config_error()}
+    end
+  end
+
+  @doc false
+  @spec build_from_config!(build_config_input()) :: provider()
   def build_from_config!(config \\ nil) do
     case build_from_config(config) do
       {:ok, provider} -> provider
@@ -109,8 +134,41 @@ defmodule Optify do
   end
 
   @doc false
+  @spec features() :: [String.t()]
+  def features, do: get_features()
+
+  @doc false
   @spec features(provider()) :: [String.t()]
-  def features(provider), do: Native.features(provider)
+  def features(provider), do: get_features(provider)
+
+  @doc false
+  @spec get_features() :: [String.t()]
+  def get_features, do: get_features(default_provider!())
+
+  @doc false
+  @spec get_features(provider()) :: [String.t()]
+  def get_features(provider), do: Native.features(provider)
+
+  @doc false
+  @spec get_aliases() :: [String.t()]
+  def get_aliases, do: get_aliases(default_provider!())
+
+  @doc false
+  @spec get_aliases(provider()) :: [String.t()]
+  def get_aliases(provider), do: Native.get_aliases(provider)
+
+  @doc false
+  @spec get_features_and_aliases() :: [String.t()]
+  def get_features_and_aliases, do: get_features_and_aliases(default_provider!())
+
+  @doc false
+  @spec get_features_and_aliases(provider()) :: [String.t()]
+  def get_features_and_aliases(provider), do: Native.get_features_and_aliases(provider)
+
+  @doc false
+  @spec get_canonical_feature_name(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def get_canonical_feature_name(feature_name),
+    do: get_canonical_feature_name(default_provider!(), feature_name)
 
   @doc false
   @spec get_canonical_feature_name(provider(), String.t()) ::
@@ -119,10 +177,129 @@ defmodule Optify do
     do: Native.get_canonical_feature_name(provider, feature_name)
 
   @doc false
+  @spec get_canonical_feature_name!(String.t()) :: String.t()
+  def get_canonical_feature_name!(feature_name) do
+    case get_canonical_feature_name(feature_name) do
+      {:ok, canonical_feature_name} ->
+        canonical_feature_name
+
+      {:error, reason} ->
+        raise ArgumentError, "Optify.get_canonical_feature_name!/1 failed: #{reason}"
+    end
+  end
+
+  @doc false
+  @spec get_canonical_feature_names([String.t()]) :: {:ok, [String.t()]} | {:error, String.t()}
+  def get_canonical_feature_names(feature_names),
+    do: get_canonical_feature_names(default_provider!(), feature_names)
+
+  @doc false
   @spec get_canonical_feature_names(provider(), [String.t()]) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def get_canonical_feature_names(provider, feature_names),
     do: Native.get_canonical_feature_names(provider, feature_names)
+
+  @doc false
+  @spec get_canonical_feature_names!([String.t()]) :: [String.t()]
+  def get_canonical_feature_names!(feature_names) do
+    case get_canonical_feature_names(feature_names) do
+      {:ok, canonical_feature_names} ->
+        canonical_feature_names
+
+      {:error, reason} ->
+        raise ArgumentError, "Optify.get_canonical_feature_names!/1 failed: #{reason}"
+    end
+  end
+
+  @doc false
+  @spec get_feature_metadata(String.t()) :: map() | nil
+  def get_feature_metadata(canonical_feature_name),
+    do: get_feature_metadata(default_provider!(), canonical_feature_name)
+
+  @doc false
+  @spec get_feature_metadata(provider(), String.t()) :: map() | nil
+  def get_feature_metadata(provider, canonical_feature_name) do
+    case Native.get_feature_metadata_json(provider, canonical_feature_name) do
+      nil -> nil
+      json -> decode_json!(json)
+    end
+  end
+
+  @doc false
+  @spec get_features_with_metadata() :: map()
+  def get_features_with_metadata, do: get_features_with_metadata(default_provider!())
+
+  @doc false
+  @spec get_features_with_metadata(provider()) :: map()
+  def get_features_with_metadata(provider) do
+    provider
+    |> Native.get_features_with_metadata_json()
+    |> decode_json!()
+  end
+
+  @doc false
+  @spec get_filtered_feature_names([String.t()]) :: {:ok, [String.t()]} | {:error, String.t()}
+  def get_filtered_feature_names(feature_names),
+    do: get_filtered_feature_names(feature_names, %GetOptionsPreferences{})
+
+  @doc false
+  @spec get_filtered_feature_names([String.t()], GetOptionsPreferences.input_t()) ::
+          {:ok, [String.t()]} | {:error, String.t()}
+  def get_filtered_feature_names(feature_names, preferences) when is_list(feature_names) do
+    get_filtered_feature_names(default_provider!(), feature_names, preferences)
+  end
+
+  @doc false
+  @spec get_filtered_feature_names(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
+          {:ok, [String.t()]} | {:error, String.t()}
+  def get_filtered_feature_names(provider, feature_names, preferences) do
+    Native.get_filtered_feature_names(
+      provider,
+      feature_names,
+      GetOptionsPreferences.to_nif_map(preferences)
+    )
+  end
+
+  @doc false
+  @spec get_filtered_feature_names!([String.t()]) :: [String.t()]
+  def get_filtered_feature_names!(feature_names),
+    do: get_filtered_feature_names!(feature_names, %GetOptionsPreferences{})
+
+  @doc false
+  @spec get_filtered_feature_names!([String.t()], GetOptionsPreferences.input_t()) ::
+          [String.t()]
+  def get_filtered_feature_names!(feature_names, preferences) when is_list(feature_names) do
+    case get_filtered_feature_names(feature_names, preferences) do
+      {:ok, resolved_feature_names} ->
+        resolved_feature_names
+
+      {:error, reason} ->
+        raise ArgumentError, "Optify.get_filtered_feature_names!/2 failed: #{reason}"
+    end
+  end
+
+  @doc false
+  @spec get_filtered_feature_names!(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
+          [String.t()]
+  def get_filtered_feature_names!(provider, feature_names, preferences) do
+    case get_filtered_feature_names(provider, feature_names, preferences) do
+      {:ok, resolved_feature_names} ->
+        resolved_feature_names
+
+      {:error, reason} ->
+        raise ArgumentError, "Optify.get_filtered_feature_names!/3 failed: #{reason}"
+    end
+  end
+
+  @doc false
+  @spec has_conditions(String.t()) :: boolean()
+  def has_conditions(canonical_feature_name),
+    do: has_conditions(default_provider!(), canonical_feature_name)
+
+  @doc false
+  @spec has_conditions(provider(), String.t()) :: boolean()
+  def has_conditions(provider, canonical_feature_name),
+    do: Native.has_conditions(provider, canonical_feature_name)
 
   @doc """
   Get merged options using the default provider.
@@ -272,10 +449,55 @@ defmodule Optify do
   defp to_atom_key(key) when is_binary(key), do: String.to_atom(key)
   defp to_atom_key(key), do: key
 
+  defp extract_build_config(config) when is_list(config) do
+    schema_path = Keyword.get(config, :schema_path) || Keyword.get(config, :schema)
+
+    cond do
+      directory = Keyword.get(config, :directory) ->
+        {:directory, directory, schema_path}
+
+      directories = Keyword.get(config, :directories) ->
+        {:directories, directories, schema_path}
+
+      true ->
+        :error
+    end
+  end
+
+  defp extract_build_config(config) when is_map(config) do
+    schema_path =
+      Map.get(config, :schema_path) ||
+        Map.get(config, "schema_path") ||
+        Map.get(config, :schema) ||
+        Map.get(config, "schema")
+
+    cond do
+      directory = Map.get(config, :directory) || Map.get(config, "directory") ->
+        {:directory, directory, schema_path}
+
+      directories = Map.get(config, :directories) || Map.get(config, "directories") ->
+        {:directories, directories, schema_path}
+
+      true ->
+        :error
+    end
+  end
+
+  defp missing_provider_config_error do
+    "Missing provider config. Set :directory or :directories in config :optify, :provider"
+  end
+
   defp decode_json(json) do
     case Jason.decode(json) do
       {:ok, decoded} -> {:ok, decoded}
       {:error, %Jason.DecodeError{} = err} -> {:error, Exception.message(err)}
+    end
+  end
+
+  defp decode_json!(json) do
+    case decode_json(json) do
+      {:ok, decoded} -> decoded
+      {:error, reason} -> raise ArgumentError, "Optify JSON decode failed: #{reason}"
     end
   end
 end
