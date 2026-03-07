@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Optify.DumpFeature do
+defmodule Mix.Tasks.Optify.Dump do
   use Mix.Task
 
   alias Optify.GetOptionsPreferences
@@ -23,10 +23,10 @@ defmodule Mix.Tasks.Optify.DumpFeature do
 
   ## Examples
 
-      mix optify.dump_feature feature_a
-      mix optify.dump_feature A --output tmp/feature_a.json
-      mix optify.dump_feature feature_a --key flow
-      mix optify.dump_feature feature_conditioned --constraints-file tmp/constraints.json
+      mix optify.dump feature_a
+      mix optify.dump A --output tmp/feature_a.json
+      mix optify.dump feature_a --key flow
+      mix optify.dump feature_conditioned --constraints-file tmp/constraints.json
 
   """
 
@@ -74,12 +74,10 @@ defmodule Mix.Tasks.Optify.DumpFeature do
         Mix.raise("Invalid options: #{Enum.join(invalid_args, ", ")}")
 
       positional == [] ->
-        Mix.raise("Expected a feature name. Usage: mix optify.dump_feature FEATURE_NAME")
+        Mix.raise("Expected a feature name. Usage: mix optify.dump FEATURE_NAME")
 
       true ->
-        Mix.raise(
-          "Expected exactly one feature name. Usage: mix optify.dump_feature FEATURE_NAME"
-        )
+        Mix.raise("Expected exactly one feature name. Usage: mix optify.dump FEATURE_NAME")
     end
   end
 

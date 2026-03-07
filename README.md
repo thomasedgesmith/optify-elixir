@@ -126,9 +126,9 @@ such as `Optify.get_features/0`, `Optify.get_aliases/0`, and `Optify.get_feature
 When a feature is spread across many imported files, you can dump the resolved merged output for review:
 
 ```bash
-mix optify.dump_feature feature_a
-mix optify.dump_feature A --output tmp/optify/feature_a.json
-mix optify.dump_feature feature_a --key flow
+mix optify.dump feature_a
+mix optify.dump A --output tmp/optify/feature_a.json
+mix optify.dump feature_a --key flow
 ```
 
 The task:

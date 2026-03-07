@@ -1,9 +1,9 @@
-defmodule Mix.Tasks.Optify.DumpFeatureTest do
+defmodule Mix.Tasks.Optify.DumpTest do
   use ExUnit.Case, async: false
 
   import ExUnit.CaptureIO
 
-  @task "optify.dump_feature"
+  @task "optify.dump"
   @configs Path.expand("../../fixtures/dump_feature_configs", __DIR__)
 
   setup do
