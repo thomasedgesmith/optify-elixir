@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "owners": "team-shared@example.com"
+  },
+  "options": {
+    "flow": {
+      "timeout_ms": 150,
+      "retries": 3
+    },
+    "notifications": {
+      "enabled": true
+    }
+  }
+}

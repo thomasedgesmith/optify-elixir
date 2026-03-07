@@ -121,6 +121,22 @@ flow["handler"]
 The same default-provider shortcut pattern is available for provider introspection
 such as `Optify.get_features/0`, `Optify.get_aliases/0`, and `Optify.get_feature_metadata/1`.
 
+## Dumping a resolved feature
+
+When a feature is spread across many imported files, you can dump the resolved merged output for review:
+
+```bash
+mix optify.dump_feature feature_a
+mix optify.dump_feature A --output tmp/optify/feature_a.json
+mix optify.dump_feature feature_a --key flow
+```
+
+The task:
+- uses the loaded default provider when available
+- otherwise loads the default provider from your configured `:optify, :provider`
+- resolves aliases to canonical feature names
+- applies imports before dumping the merged result
+
 ## Typed options (structs)
 
 You can cast the merged options into a struct/module:
