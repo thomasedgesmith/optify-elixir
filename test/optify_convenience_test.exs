@@ -40,11 +40,33 @@ defmodule Optify.ConvenienceTest do
     assert options.flow.timeout_ms == nil
   end
 
+  test "get_options/1 hydrates known nested option paths with nil defaults" do
+    provider = Optify.build!(@configs)
+    :ok = Optify.set_default_provider(provider)
+
+    assert {:ok, options} = Optify.get_options(["feature_conditioned"])
+
+    assert options.myConfig.conditioned
+    assert options.flow.handler == nil
+    assert options.flow.timeout_ms == nil
+  end
+
   test "get_options!/2 hydrates known nested option paths for string keys too" do
     provider = Optify.build!(@configs)
     :ok = Optify.set_default_provider(provider)
 
     options = Optify.get_options!(["feature_conditioned"], keys: :strings)
+
+    assert options["myConfig"]["conditioned"]
+    assert options["flow"]["handler"] == nil
+    assert options["flow"]["timeout_ms"] == nil
+  end
+
+  test "get_options/2 hydrates known nested option paths for string keys too" do
+    provider = Optify.build!(@configs)
+    :ok = Optify.set_default_provider(provider)
+
+    assert {:ok, options} = Optify.get_options(["feature_conditioned"], keys: :strings)
 
     assert options["myConfig"]["conditioned"]
     assert options["flow"]["handler"] == nil
