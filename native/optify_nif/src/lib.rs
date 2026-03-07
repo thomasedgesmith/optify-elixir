@@ -166,10 +166,7 @@ fn get_all_options_json_with_preferences(
 }
 
 #[rustler::nif]
-fn has_conditions(
-    provider: ResourceArc<ProviderResource>,
-    canonical_feature_name: String,
-) -> bool {
+fn has_conditions(provider: ResourceArc<ProviderResource>, canonical_feature_name: String) -> bool {
     provider.provider.has_conditions(&canonical_feature_name)
 }
 
