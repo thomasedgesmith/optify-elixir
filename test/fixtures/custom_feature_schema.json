@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "allOf": [
+    {
+      "$ref": "https://raw.githubusercontent.com/juharris/optify/refs/heads/main/schemas/feature_file.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "required": ["owners"]
+        }
+      }
+    }
+  ]
+}

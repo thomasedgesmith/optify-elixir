@@ -1,6 +1,10 @@
 {
   "metadata": {
-    "aliases": ["A"]
+    "aliases": ["A"],
+    "details": {
+      "summary": "Primary flow"
+    },
+    "owners": "team-a@example.com"
   },
   "options": {
     "myConfig": {

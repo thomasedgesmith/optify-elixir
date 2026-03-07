@@ -1,0 +1,11 @@
+metadata:
+  aliases:
+    - "COMPOSED"
+  owners: "team-composed@example.com"
+imports:
+  - "feature_shared"
+options:
+  flow:
+    handler: "composed"
+  notifications:
+    channel: "email"

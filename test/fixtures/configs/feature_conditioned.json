@@ -1,4 +1,7 @@
 {
+  "metadata": {
+    "owners": "team-conditioned@example.com"
+  },
   "conditions": {
     "jsonPointer": "/clientId",
     "equals": 1234
