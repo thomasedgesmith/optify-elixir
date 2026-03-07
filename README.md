@@ -2,27 +2,94 @@
 
 Elixir client for [Optify](https://github.com/juharris/optify), powered by the upstream Rust crate via Rustler NIFs.
 
-## High-level usage
+## Using with Phoenix
 
-Configure provider once at app level, then fetch options by feature names.
+Configure the default provider in your Phoenix app config.
+`optify-elixir` starts its own `Optify.DefaultProvider` process, so you do not need to add it to your app's supervisor tree manually.
 
 ```elixir
-# config/runtime.exs (or dev.exs/prod.exs)
+# config/config.exs
+import Config
+
+config :optify,
+  auto_load_default_provider: true,
+  auto_reload_default_provider: false
+```
+
+```elixir
+# config/dev.exs
+import Config
+
+config :optify,
+  auto_reload_default_provider: true
+```
+
+```elixir
+# config/runtime.exs
+import Config
+
 config :optify, :provider,
-  directory: "config/optify"
+  directory:
+    System.get_env("OPTIFY_CONFIG_DIR") ||
+      Application.app_dir(:my_app, "priv/optify")
 
 # Optional: validate feature files against a custom schema that extends
 # Optify's upstream feature-file schema.
 config :optify, :provider,
-  directory: "config/optify",
-  schema_path: "priv/schemas/optify_feature.schema.json"
+  directory:
+    System.get_env("OPTIFY_CONFIG_DIR") ||
+      Application.app_dir(:my_app, "priv/optify"),
+  schema_path:
+    System.get_env("OPTIFY_SCHEMA_PATH") ||
+      Application.app_dir(:my_app, "priv/optify_schema.json")
 ```
 
-Defaults:
-- provider auto-loads at app startup
-- provider auto-reloads in `:dev` when config files change
+Recommended behavior:
+- always auto-load the default provider
+- only auto-reload from disk in `:dev`
+- resolve the config path in `runtime.exs`
 
-Then in code:
+## Feature files
+
+Point `:provider` at a directory of feature files. Feature names come from the relative file path without the extension.
+
+Example files:
+
+```json
+// priv/optify/feature_a.json
+{
+  "metadata": {
+    "aliases": ["A"]
+  },
+  "options": {
+    "flow": {
+      "handler": "a",
+      "timeout_ms": 100
+    }
+  }
+}
+```
+
+```yaml
+# priv/optify/feature_b.yaml
+metadata:
+  aliases:
+    - "B"
+options:
+  flow:
+    handler: "b"
+    timeout_ms: 200
+```
+
+That gives you:
+- canonical feature names: `"feature_a"` and `"feature_b"`
+- aliases: `"A"` and `"B"`
+
+When you request both features, later features override earlier ones.
+
+## Loading from features
+
+Fetch merged options by feature name using the default provider:
 
 ```elixir
 options = Optify.get_options!(["feature_a", "feature_b"])
@@ -34,6 +101,22 @@ options.flow.handler
 
 `flow` is just a normal top-level key under `options` in your feature files.
 No special key name is required.
+
+Aliases work too:
+
+```elixir
+options = Optify.get_options!(["A", "B"])
+options.flow.handler
+```
+
+You can also fetch a specific top-level key with the explicit provider API:
+
+```elixir
+provider = Optify.build!(Application.app_dir(:my_app, "priv/optify"))
+
+flow = Optify.get_options!(provider, "flow", ["feature_a", "feature_b"])
+flow["handler"]
+```
 
 The same default-provider shortcut pattern is available for provider introspection
 such as `Optify.get_features/0`, `Optify.get_aliases/0`, and `Optify.get_feature_metadata/1`.
