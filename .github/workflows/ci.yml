@@ -9,8 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      OPTIFY_BUILD: "1"
 
     steps:
       - name: Checkout
