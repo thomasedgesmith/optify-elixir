@@ -4,11 +4,13 @@ defmodule Optify.MixProject do
   def project do
     [
       app: :optify,
-      version: "0.1.0",
+      version: File.read!(Path.join(__DIR__, "VERSION")) |> String.trim(),
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "Elixir/Phoenix client for Optify powered by the Rust crate",
+      description: "Elixir client for Optify, powered by Rustler NIFs",
+      docs: docs(),
+      name: "Optify",
       package: package(),
       source_url: "https://github.com/thomasedgesmith/optify-elixir"
     ]
@@ -27,12 +29,36 @@ defmodule Optify.MixProject do
     [
       {:rustler, "~> 0.37", runtime: false},
       {:jason, "~> 1.4"},
-      {:file_system, "~> 1.1"}
+      {:file_system, "~> 1.1"},
+      {:ex_doc, "~> 0.40", only: :dev, runtime: false}
     ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md", "LICENSE"],
+      source_ref: source_ref()
+    ]
+  end
+
+  defp source_ref do
+    System.get_env("GITHUB_SHA") || "main"
   end
 
   defp package do
     [
+      files: ~w(
+        lib
+        mix.exs
+        VERSION
+        README.md
+        LICENSE
+        native/optify_nif/Cargo.toml
+        native/optify_nif/Cargo.lock
+        native/optify_nif/rust-toolchain.toml
+        native/optify_nif/src
+      ),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/thomasedgesmith/optify-elixir"}
     ]

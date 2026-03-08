@@ -1,11 +1,11 @@
-# Optify (Elixir / Phoenix)
+# Optify
 
-Elixir client for [Optify](https://github.com/juharris/optify), powered by the upstream Rust crate via Rustler NIFs.
+Optify is an Elixir client for [Optify](https://github.com/juharris/optify), powered by the upstream Rust crate via Rustler NIFs.
 
-## Using with Phoenix
+## Usage
 
-Configure the default provider in your Phoenix app config.
-`optify-elixir` starts its own `Optify.DefaultProvider` process, so you do not need to add it to your app's supervisor tree manually.
+Configure the default provider in your app config.
+Optify starts its own default provider process, so you do not need to add it to your app's supervisor tree manually.
 The default provider auto-loads automatically once `:optify, :provider` is configured.
 
 ```elixir
@@ -115,8 +115,8 @@ flow = Optify.get_options!(provider, "flow", ["feature_a", "feature_b"])
 flow["handler"]
 ```
 
-The same default-provider shortcut pattern is available for provider introspection
-such as `Optify.get_features/0`, `Optify.get_aliases/0`, and `Optify.get_feature_metadata/1`.
+The same default-provider shortcut pattern is available for provider introspection,
+including feature listing, alias lookup, and feature metadata access.
 
 ## Dumping a resolved feature
 
@@ -157,41 +157,9 @@ If `as:` points to a struct module without `from_optify/1`, Optify will attempt 
 
 ## API shape
 
-- Default-provider convenience:
-  - `Optify.get_options/2`
-  - `Optify.get_options!/2`
-  - `Optify.get_features/0`
-  - `Optify.get_aliases/0`
-  - `Optify.get_features_and_aliases/0`
-  - `Optify.get_canonical_feature_name/1`
-  - `Optify.get_canonical_feature_name!/1`
-  - `Optify.get_canonical_feature_names/1`
-  - `Optify.get_canonical_feature_names!/1`
-  - `Optify.get_feature_metadata/1`
-  - `Optify.get_features_with_metadata/0`
-  - `Optify.get_filtered_feature_names/1`
-  - `Optify.get_filtered_feature_names/2`
-  - `Optify.get_filtered_feature_names!/1`
-  - `Optify.get_filtered_feature_names!/2`
-  - `Optify.has_conditions/1`
-- Provider builders:
-  - `Optify.build/1`
-  - `Optify.build_with_schema/2`
-  - `Optify.build_from_directories/1`
-  - `Optify.build_from_directories_with_schema/2`
-- Provider-explicit APIs:
-  - `Optify.get_options/4`
-  - `Optify.get_options!/4`
-  - `Optify.get_features/1`
-  - `Optify.get_aliases/1`
-  - `Optify.get_features_and_aliases/1`
-  - `Optify.get_canonical_feature_name/2`
-  - `Optify.get_canonical_feature_names/2`
-  - `Optify.get_feature_metadata/2`
-  - `Optify.get_features_with_metadata/1`
-  - `Optify.get_filtered_feature_names/3`
-  - `Optify.get_filtered_feature_names!/3`
-  - `Optify.has_conditions/2`
+- Default-provider convenience: merged option lookup, feature listing, alias lookup, canonical name resolution, metadata lookup, filtering, and condition checks.
+- Provider builders: construct a provider from one directory, multiple directories, and optional schema paths.
+- Provider-explicit APIs: the same capabilities are available when you pass an explicit provider value.
 
 ## Development
 

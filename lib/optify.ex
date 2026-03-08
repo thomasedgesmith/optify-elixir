@@ -1,12 +1,16 @@
 defmodule Optify do
   @moduledoc """
-  Optify high-level API.
+  High-level Elixir API for Optify feature providers.
 
-  Public API (stable):
-  - `get_options/2`
-  - `get_options/4`
-  - `get_options!/2`
-  - `get_options!/4`
+  Most applications interact with Optify through the default-provider helpers:
+
+  - `get_options/2` and `get_options!/2` for merged option lookup
+  - `get_features/0` and `get_aliases/0` for feature discovery
+  - `get_feature_metadata/1` for metadata lookup
+
+  When you need more control, you can build a provider explicitly with
+  `build!/1`, `build_with_schema!/2`, or `build_from_directories!/1` and then
+  call the provider-explicit APIs.
   """
 
   alias Optify.DefaultProvider
@@ -18,11 +22,18 @@ defmodule Optify do
   @type provider :: reference()
   @type build_config_input :: keyword() | map() | nil
 
-  @doc false
+  @doc """
+  Build a provider from one feature directory.
+
+  Returns `{:ok, provider}` on success or `{:error, reason}` when the directory
+  cannot be loaded.
+  """
   @spec build(String.t()) :: {:ok, provider()} | {:error, String.t()}
   def build(directory), do: Native.build_provider(directory)
 
-  @doc false
+  @doc """
+  Bang variant of `build/1`.
+  """
   @spec build!(String.t()) :: provider()
   def build!(directory) do
     case build(directory) do
@@ -31,12 +42,16 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Build a provider from one feature directory and a JSON schema path.
+  """
   @spec build_with_schema(String.t(), String.t()) :: {:ok, provider()} | {:error, String.t()}
   def build_with_schema(directory, schema_path),
     do: Native.build_provider_with_schema(directory, schema_path)
 
-  @doc false
+  @doc """
+  Bang variant of `build_with_schema/2`.
+  """
   @spec build_with_schema!(String.t(), String.t()) :: provider()
   def build_with_schema!(directory, schema_path) do
     case build_with_schema(directory, schema_path) do
@@ -45,11 +60,15 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Build a provider from multiple feature directories.
+  """
   @spec build_from_directories([String.t()]) :: {:ok, provider()} | {:error, String.t()}
   def build_from_directories(directories), do: Native.build_provider_from_directories(directories)
 
-  @doc false
+  @doc """
+  Bang variant of `build_from_directories/1`.
+  """
   @spec build_from_directories!([String.t()]) :: provider()
   def build_from_directories!(directories) do
     case build_from_directories(directories) do
@@ -61,13 +80,17 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Build a provider from multiple feature directories and a JSON schema path.
+  """
   @spec build_from_directories_with_schema([String.t()], String.t()) ::
           {:ok, provider()} | {:error, String.t()}
   def build_from_directories_with_schema(directories, schema_path),
     do: Native.build_provider_from_directories_with_schema(directories, schema_path)
 
-  @doc false
+  @doc """
+  Bang variant of `build_from_directories_with_schema/2`.
+  """
   @spec build_from_directories_with_schema!([String.t()], String.t()) :: provider()
   def build_from_directories_with_schema!(directories, schema_path) do
     case build_from_directories_with_schema(directories, schema_path) do
@@ -80,7 +103,15 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Build a provider from the `:optify, :provider` config shape.
+
+  Supported config keys:
+
+  - `:directory`
+  - `:directories`
+  - `:schema_path`
+  """
   @spec build_from_config(build_config_input()) :: {:ok, provider()} | {:error, String.t()}
   def build_from_config(config \\ nil)
 
@@ -105,7 +136,9 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Bang variant of `build_from_config/1`.
+  """
   @spec build_from_config!(build_config_input()) :: provider()
   def build_from_config!(config \\ nil) do
     case build_from_config(config) do
@@ -114,19 +147,31 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Set the process-global default provider used by the convenience APIs.
+  """
   @spec set_default_provider(provider()) :: :ok
   def set_default_provider(provider), do: DefaultProvider.set(provider)
 
-  @doc false
+  @doc """
+  Return the current default provider, or `nil` if one has not been loaded.
+  """
   @spec default_provider() :: provider() | nil
   def default_provider, do: DefaultProvider.get()
 
-  @doc false
+  @doc """
+  Return the current default provider.
+
+  Raises if no default provider has been loaded.
+  """
   @spec default_provider!() :: provider()
   def default_provider!, do: DefaultProvider.get!()
 
-  @doc false
+  @doc """
+  Build and store the default provider from the given config.
+
+  When `config` is omitted, this reads from `Application.get_env(:optify, :provider)`.
+  """
   @spec load_default_provider!(keyword() | map() | nil) :: provider()
   def load_default_provider!(config \\ nil) do
     provider = build_from_config!(config)
@@ -142,42 +187,60 @@ defmodule Optify do
   @spec features(provider()) :: [String.t()]
   def features(provider), do: get_features(provider)
 
-  @doc false
+  @doc """
+  Return all canonical feature names from the default provider.
+  """
   @spec get_features() :: [String.t()]
   def get_features, do: get_features(default_provider!())
 
-  @doc false
+  @doc """
+  Return all canonical feature names from the given provider.
+  """
   @spec get_features(provider()) :: [String.t()]
   def get_features(provider), do: Native.features(provider)
 
-  @doc false
+  @doc """
+  Return all configured aliases from the default provider.
+  """
   @spec get_aliases() :: [String.t()]
   def get_aliases, do: get_aliases(default_provider!())
 
-  @doc false
+  @doc """
+  Return all configured aliases from the given provider.
+  """
   @spec get_aliases(provider()) :: [String.t()]
   def get_aliases(provider), do: Native.get_aliases(provider)
 
-  @doc false
+  @doc """
+  Return canonical feature names and aliases from the default provider.
+  """
   @spec get_features_and_aliases() :: [String.t()]
   def get_features_and_aliases, do: get_features_and_aliases(default_provider!())
 
-  @doc false
+  @doc """
+  Return canonical feature names and aliases from the given provider.
+  """
   @spec get_features_and_aliases(provider()) :: [String.t()]
   def get_features_and_aliases(provider), do: Native.get_features_and_aliases(provider)
 
-  @doc false
+  @doc """
+  Resolve a feature name or alias to its canonical feature name using the default provider.
+  """
   @spec get_canonical_feature_name(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def get_canonical_feature_name(feature_name),
     do: get_canonical_feature_name(default_provider!(), feature_name)
 
-  @doc false
+  @doc """
+  Resolve a feature name or alias to its canonical feature name using the given provider.
+  """
   @spec get_canonical_feature_name(provider(), String.t()) ::
           {:ok, String.t()} | {:error, String.t()}
   def get_canonical_feature_name(provider, feature_name),
     do: Native.get_canonical_feature_name(provider, feature_name)
 
-  @doc false
+  @doc """
+  Bang variant of `get_canonical_feature_name/1`.
+  """
   @spec get_canonical_feature_name!(String.t()) :: String.t()
   def get_canonical_feature_name!(feature_name) do
     case get_canonical_feature_name(feature_name) do
@@ -189,18 +252,24 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Resolve multiple feature names or aliases using the default provider.
+  """
   @spec get_canonical_feature_names([String.t()]) :: {:ok, [String.t()]} | {:error, String.t()}
   def get_canonical_feature_names(feature_names),
     do: get_canonical_feature_names(default_provider!(), feature_names)
 
-  @doc false
+  @doc """
+  Resolve multiple feature names or aliases using the given provider.
+  """
   @spec get_canonical_feature_names(provider(), [String.t()]) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def get_canonical_feature_names(provider, feature_names),
     do: Native.get_canonical_feature_names(provider, feature_names)
 
-  @doc false
+  @doc """
+  Bang variant of `get_canonical_feature_names/1`.
+  """
   @spec get_canonical_feature_names!([String.t()]) :: [String.t()]
   def get_canonical_feature_names!(feature_names) do
     case get_canonical_feature_names(feature_names) do
@@ -212,12 +281,16 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Return metadata for one canonical feature from the default provider.
+  """
   @spec get_feature_metadata(String.t()) :: map() | nil
   def get_feature_metadata(canonical_feature_name),
     do: get_feature_metadata(default_provider!(), canonical_feature_name)
 
-  @doc false
+  @doc """
+  Return metadata for one canonical feature from the given provider.
+  """
   @spec get_feature_metadata(provider(), String.t()) :: map() | nil
   def get_feature_metadata(provider, canonical_feature_name) do
     case Native.get_feature_metadata_json(provider, canonical_feature_name) do
@@ -226,11 +299,15 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Return metadata for all features from the default provider.
+  """
   @spec get_features_with_metadata() :: map()
   def get_features_with_metadata, do: get_features_with_metadata(default_provider!())
 
-  @doc false
+  @doc """
+  Return metadata for all features from the given provider.
+  """
   @spec get_features_with_metadata(provider()) :: map()
   def get_features_with_metadata(provider) do
     provider
@@ -238,19 +315,25 @@ defmodule Optify do
     |> decode_json!()
   end
 
-  @doc false
+  @doc """
+  Filter feature names using the default provider and default preferences.
+  """
   @spec get_filtered_feature_names([String.t()]) :: {:ok, [String.t()]} | {:error, String.t()}
   def get_filtered_feature_names(feature_names),
     do: get_filtered_feature_names(feature_names, %GetOptionsPreferences{})
 
-  @doc false
+  @doc """
+  Filter feature names using the default provider and the given preferences.
+  """
   @spec get_filtered_feature_names([String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def get_filtered_feature_names(feature_names, preferences) when is_list(feature_names) do
     get_filtered_feature_names(default_provider!(), feature_names, preferences)
   end
 
-  @doc false
+  @doc """
+  Filter feature names using the given provider and preferences.
+  """
   @spec get_filtered_feature_names(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
           {:ok, [String.t()]} | {:error, String.t()}
   def get_filtered_feature_names(provider, feature_names, preferences) do
@@ -261,12 +344,16 @@ defmodule Optify do
     )
   end
 
-  @doc false
+  @doc """
+  Bang variant of `get_filtered_feature_names/1`.
+  """
   @spec get_filtered_feature_names!([String.t()]) :: [String.t()]
   def get_filtered_feature_names!(feature_names),
     do: get_filtered_feature_names!(feature_names, %GetOptionsPreferences{})
 
-  @doc false
+  @doc """
+  Bang variant of `get_filtered_feature_names/2`.
+  """
   @spec get_filtered_feature_names!([String.t()], GetOptionsPreferences.input_t()) ::
           [String.t()]
   def get_filtered_feature_names!(feature_names, preferences) when is_list(feature_names) do
@@ -279,7 +366,9 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Bang variant of `get_filtered_feature_names/3`.
+  """
   @spec get_filtered_feature_names!(provider(), [String.t()], GetOptionsPreferences.input_t()) ::
           [String.t()]
   def get_filtered_feature_names!(provider, feature_names, preferences) do
@@ -292,12 +381,16 @@ defmodule Optify do
     end
   end
 
-  @doc false
+  @doc """
+  Return whether the canonical feature has conditions in the default provider.
+  """
   @spec has_conditions(String.t()) :: boolean()
   def has_conditions(canonical_feature_name),
     do: has_conditions(default_provider!(), canonical_feature_name)
 
-  @doc false
+  @doc """
+  Return whether the canonical feature has conditions in the given provider.
+  """
   @spec has_conditions(provider(), String.t()) :: boolean()
   def has_conditions(provider, canonical_feature_name),
     do: Native.has_conditions(provider, canonical_feature_name)
