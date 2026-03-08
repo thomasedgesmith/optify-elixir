@@ -2,15 +2,6 @@
 
 Optify is an Elixir client for [Optify](https://github.com/juharris/optify), powered by the upstream Rust crate via Rustler NIFs.
 
-## Precompiled NIFs
-
-Optify ships precompiled NIFs for common macOS and Linux targets, including glibc and musl/Alpine Linux, so consumers usually do not need Rust installed.
-Unsupported targets fall back to a local Rust build, and you can also force a local build explicitly with:
-
-```bash
-OPTIFY_BUILD=1 mix compile
-```
-
 ## Usage
 
 Configure the default provider in your app config.
@@ -172,20 +163,17 @@ If `as:` points to a struct module without `from_optify/1`, Optify will attempt 
 
 ## Development
 
-Use a local Rust build while developing this package:
+Rust and Cargo are required because the NIF is built from source.
+If you use mise, install Rust before running the project:
+
+```bash
+mise use -g rust@stable
+```
+
+Then:
 
 ```bash
 mix deps.get
-OPTIFY_BUILD=1 mix format
-OPTIFY_BUILD=1 mix test
+mix format
+mix test
 ```
-
-## Releasing
-
-The release flow for precompiled NIFs is:
-
-1. bump `VERSION`
-2. create and push a `v*` tag
-3. let GitHub Actions build and upload NIF archives to the GitHub Release
-4. let the publish job generate `checksum-Elixir.Optify.Native.exs`
-5. publish the Hex package and docs after the release artifacts exist

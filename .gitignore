@@ -22,10 +22,6 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 optify-*.tar
 
-# Generated checksum file for precompiled NIF releases.
-checksum-*.exs
-
 # Rustler build artifacts
 /native/optify_nif/target/
 /priv/native/
-

@@ -8,7 +8,7 @@ defmodule Optify.MixProject do
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "Elixir client for Optify with precompiled Rustler NIFs",
+      description: "Elixir client for Optify, powered by Rustler NIFs",
       docs: docs(),
       name: "Optify",
       package: package(),
@@ -27,8 +27,7 @@ defmodule Optify.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:rustler_precompiled, "~> 0.8"},
-      {:rustler, ">= 0.0.0", optional: true},
+      {:rustler, "~> 0.37", runtime: false},
       {:jason, "~> 1.4"},
       {:file_system, "~> 1.1"},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false}
@@ -50,17 +49,16 @@ defmodule Optify.MixProject do
   defp package do
     [
       files: ~w(
-          lib
-          mix.exs
-          VERSION
-          README.md
-          LICENSE
-          native/optify_nif/.cargo
-          native/optify_nif/Cargo.toml
-          native/optify_nif/Cargo.lock
-          native/optify_nif/rust-toolchain.toml
-          native/optify_nif/src
-        ) ++ Path.wildcard("checksum-*.exs"),
+        lib
+        mix.exs
+        VERSION
+        README.md
+        LICENSE
+        native/optify_nif/Cargo.toml
+        native/optify_nif/Cargo.lock
+        native/optify_nif/rust-toolchain.toml
+        native/optify_nif/src
+      ),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/thomasedgesmith/optify-elixir"}
     ]
