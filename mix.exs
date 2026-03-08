@@ -55,6 +55,7 @@ defmodule Optify.MixProject do
           VERSION
           README.md
           LICENSE
+          native/optify_nif/.cargo
           native/optify_nif/Cargo.toml
           native/optify_nif/Cargo.lock
           native/optify_nif/rust-toolchain.toml

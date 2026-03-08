@@ -4,7 +4,7 @@ Optify is an Elixir client for [Optify](https://github.com/juharris/optify), pow
 
 ## Precompiled NIFs
 
-Optify ships precompiled NIFs for common macOS and Linux targets, so consumers usually do not need Rust installed.
+Optify ships precompiled NIFs for common macOS and Linux targets, including glibc and musl/Alpine Linux, so consumers usually do not need Rust installed.
 Unsupported targets fall back to a local Rust build, and you can also force a local build explicitly with:
 
 ```bash
