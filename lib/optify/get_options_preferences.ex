@@ -1,6 +1,19 @@
 defmodule Optify.GetOptionsPreferences do
   @moduledoc """
-  Runtime preferences for building options.
+  Runtime preferences for resolving Optify options.
+
+  This struct controls how feature selection and option resolution behave when
+  calling APIs such as `Optify.get_options/2` and
+  `Optify.get_filtered_feature_names/2`.
+
+  You can pass either this struct or a plain map with matching keys.
+
+  ## Fields
+
+  - `:are_configurable_strings_enabled` enables configurable string evaluation.
+  - `:constraints_json` provides constraint input as a JSON string.
+  - `:overrides_json` provides override input as a JSON string.
+  - `:skip_feature_name_conversion` keeps feature names as provided.
   """
 
   @enforce_keys []
@@ -18,6 +31,13 @@ defmodule Optify.GetOptionsPreferences do
 
   @type input_t :: t() | map()
 
+  @doc """
+  Normalize a preference struct or map into `%Optify.GetOptionsPreferences{}`.
+
+  Map inputs may use either atom or string keys. The `:constraints` and
+  `:overrides` keys may be maps or lists, which are encoded to JSON
+  automatically.
+  """
   @spec normalize(input_t()) :: t()
   def normalize(%__MODULE__{} = prefs), do: prefs
 
@@ -46,6 +66,9 @@ defmodule Optify.GetOptionsPreferences do
     }
   end
 
+  @doc """
+  Convert preferences into the map shape expected by the Rust NIF layer.
+  """
   @spec to_nif_map(input_t()) :: map()
   def to_nif_map(prefs) do
     prefs = normalize(prefs)
