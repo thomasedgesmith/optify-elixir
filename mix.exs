@@ -1,13 +1,10 @@
 defmodule Optify.MixProject do
   use Mix.Project
 
-  @version File.read!(Path.join(__DIR__, "VERSION")) |> String.trim()
-  @source_url "https://github.com/thomasedgesmith/optify-elixir"
-
   def project do
     [
       app: :optify,
-      version: @version,
+      version: File.read!(Path.join(__DIR__, "VERSION")) |> String.trim(),
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -15,7 +12,7 @@ defmodule Optify.MixProject do
       docs: docs(),
       name: "Optify",
       package: package(),
-      source_url: @source_url
+      source_url: "https://github.com/thomasedgesmith/optify-elixir"
     ]
   end
 
@@ -63,7 +60,7 @@ defmodule Optify.MixProject do
         native/optify_nif/src
       ),
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url}
+      links: %{"GitHub" => "https://github.com/thomasedgesmith/optify-elixir"}
     ]
   end
 end
